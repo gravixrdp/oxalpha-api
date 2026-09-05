@@ -119,7 +119,13 @@ async def test_streaming_completion(client: httpx.AsyncClient, auth_headers: dic
 
     body = res.text
     assert "data: " in body
-    assert "Streaming response" in body
+    chunks = [
+        json.loads(line[6:])
+        for line in body.split("\n\n")
+        if line.startswith("data: ") and line.strip() != "data: [DONE]" and line.strip()
+    ]
+    full_content = "".join(c["choices"][0]["delta"].get("content", "") for c in chunks)
+    assert "Streaming response" in full_content
     assert "data: [DONE]" in body
 
 

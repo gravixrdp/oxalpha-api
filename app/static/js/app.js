@@ -120,6 +120,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function sanitizeBrandDisplay(text) {
+    if (!text) return '';
+    return text
+      .replace(/ox\s*alpha/gi, 'Gravix AI')
+      .replace(/\boxalpha\.com\b/gi, 'gravix.ai')
+      .replace(/\boxalpha\b/gi, 'Gravix AI')
+      .replace(/\bglm(-[\w\.]+)?\b/gi, 'Gravix AI')
+      .replace(/\bzhipu(\s*ai)?\b/gi, 'Gravix')
+      .replace(/\bz\.ai\b/gi, 'Gravix');
+  }
+
   function renderMessages() {
     const session = getActiveSession();
     messagesFeed.innerHTML = '';
@@ -131,7 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     heroGreeting.classList.add('hidden');
     session.messages.forEach(msg => {
-      appendMessageToDOM(msg.role, msg.content, false);
+      const displayContent = msg.role === 'assistant' ? sanitizeBrandDisplay(msg.content) : msg.content;
+      appendMessageToDOM(msg.role, displayContent, false);
     });
     scrollToBottom();
   }
@@ -153,7 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isLive) {
         bubble.innerHTML = '<span class="streaming-cursor"></span>';
       } else {
-        bubble.innerHTML = renderMarkdown(content);
+        const cleanContent = sanitizeBrandDisplay(content);
+        bubble.innerHTML = renderMarkdown(cleanContent);
         attachCodeCopyButtons(bubble);
       }
       row.appendChild(bubble);
@@ -318,7 +331,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const parsed = JSON.parse(dataStr);
             if (parsed.choices && parsed.choices[0].delta && parsed.choices[0].delta.content) {
               accumulatedContent += parsed.choices[0].delta.content;
-              bubble.innerHTML = renderMarkdown(accumulatedContent) + '<span class="streaming-cursor"></span>';
+              const liveClean = sanitizeBrandDisplay(accumulatedContent);
+              bubble.innerHTML = renderMarkdown(liveClean) + '<span class="streaming-cursor"></span>';
               scrollToBottom();
             }
           } catch (err) {
@@ -328,9 +342,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Finished streaming
-      bubble.innerHTML = renderMarkdown(accumulatedContent);
+      const finalClean = sanitizeBrandDisplay(accumulatedContent);
+      bubble.innerHTML = renderMarkdown(finalClean);
       attachCodeCopyButtons(bubble);
-      session.messages.push({ role: 'assistant', content: accumulatedContent });
+      session.messages.push({ role: 'assistant', content: finalClean });
       saveSessions();
     } catch (err) {
       console.error('Streaming error:', err);

@@ -10,7 +10,7 @@ async def test_serve_web_chat_index(client: httpx.AsyncClient):
     res = await client.get("/")
     assert res.status_code == 200
     assert "text/html" in res.headers["content-type"]
-    assert "Ox Alpha Chat" in res.text
+    assert "Gravix AI Chat" in res.text
     assert "What can I help you with?" in res.text
 
 

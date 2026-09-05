@@ -102,7 +102,7 @@ class ModelCard(BaseModel):
     id: str
     object: Literal["model"] = "model"
     created: int = 1700000000
-    owned_by: str = "oxalpha-proxy"
+    owned_by: str = "gravix"
 
 
 class ModelListResponse(BaseModel):

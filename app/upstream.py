@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re
 import time
 import urllib.parse
 import uuid
@@ -187,9 +188,29 @@ class UpstreamClient:
 
         return resp
 
+    def sanitize_brand_text(self, text: str) -> str:
+        """Replace upstream model names, provider names, and domains with custom branding."""
+        if not text:
+            return text
+        brand = self.settings.BRAND_NAME
+        # Mask Ox Alpha
+        text = re.sub(r"(?i)\box\s*alpha\b", brand, text)
+        text = re.sub(r"(?i)\boxalpha\.com\b", "gravix.ai", text)
+        text = re.sub(r"(?i)\boxalpha\b", brand, text)
+        # Mask GLM references
+        text = re.sub(r"(?i)\bglm(?:\s*-\s*[\d\.]+(?:-flash)?)?\b", brand, text)
+        # Mask Zhipu AI references
+        text = re.sub(r"(?i)\bzhipu(?:\s*ai)?\b", "Gravix", text)
+        text = re.sub(r"(?i)\bz\.ai\b", "Gravix", text)
+        return text
+
     def _prepare_payload(self, request: ChatCompletionRequest) -> dict:
-        """Map client completion request to upstream payload format."""
-        upstream_messages = []
+        """Map client completion request to upstream payload format with stealth identity injection."""
+        system_directives = []
+        if self.settings.SYSTEM_PROMPT:
+            system_directives.append(self.settings.SYSTEM_PROMPT.strip())
+
+        extracted_messages = []
         for msg in request.messages:
             content = msg.content
             if isinstance(content, list):
@@ -200,11 +221,27 @@ class UpstreamClient:
                     if isinstance(part, dict) and part.get("type") == "text"
                 ]
                 content = " ".join(text_parts)
-            upstream_messages.append({"role": msg.role, "content": content or ""})
+
+            # If user supplied a system message, collect it
+            if msg.role.lower() == "system":
+                if content:
+                    system_directives.append(content.strip())
+            else:
+                extracted_messages.append({"role": msg.role, "content": content or ""})
+
+        # Prepend combined stealth system prompt into the first user message
+        if system_directives:
+            combined_prompt = "\n\n".join(system_directives)
+            directive_header = f"[System Instructions:\n{combined_prompt}\n]\n\n"
+
+            if extracted_messages and extracted_messages[0]["role"] == "user":
+                extracted_messages[0]["content"] = directive_header + extracted_messages[0]["content"]
+            else:
+                extracted_messages.insert(0, {"role": "user", "content": directive_header + "Hello."})
 
         return {
             "model": self.settings.UPSTREAM_MODEL,
-            "messages": upstream_messages,
+            "messages": extracted_messages,
         }
 
     async def create_chat_completion(
@@ -253,6 +290,7 @@ class UpstreamClient:
             await resp.aclose()
 
         combined_text = "".join(full_content_parts)
+        combined_text = self.sanitize_brand_text(combined_text)
         public_model = request.model or self.settings.PUBLIC_MODEL_NAME
 
         return ChatCompletionResponse(
@@ -306,6 +344,13 @@ class UpstreamClient:
                     chunk_json["created"] = created_time
                 if "object" not in chunk_json:
                     chunk_json["object"] = "chat.completion.chunk"
+
+                # Sanitize streamed text delta
+                if "choices" in chunk_json and chunk_json["choices"]:
+                    first_c = chunk_json["choices"][0]
+                    delta = first_c.get("delta", {})
+                    if "content" in delta and delta["content"]:
+                        delta["content"] = self.sanitize_brand_text(delta["content"])
 
                 yield format_sse_chunk(chunk_json)
 

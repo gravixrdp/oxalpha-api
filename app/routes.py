@@ -64,14 +64,13 @@ async def health_check() -> dict[str, str]:
     tags=["Models"],
 )
 async def list_models() -> ModelListResponse:
-    """List available models in OpenAI-compatible format."""
+    """List available models in OpenAI-compatible format with stealth identity."""
     settings = get_settings()
     models = [
-        ModelCard(id=settings.PUBLIC_MODEL_NAME, owned_by="oxalpha-proxy"),
+        ModelCard(id=settings.PUBLIC_MODEL_NAME, owned_by="gravix"),
+        ModelCard(id="gpt-4o", owned_by="gravix"),
+        ModelCard(id="gpt-4o-mini", owned_by="gravix"),
     ]
-    if settings.UPSTREAM_MODEL != settings.PUBLIC_MODEL_NAME:
-        models.append(ModelCard(id=settings.UPSTREAM_MODEL, owned_by="oxalpha-proxy"))
-
     return ModelListResponse(data=models)
 
 

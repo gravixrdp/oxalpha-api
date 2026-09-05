@@ -20,8 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const displayModelName = document.getElementById('displayModelName');
 
   // State
-  let sessions = JSON.parse(localStorage.getItem('ox_chat_sessions') || '[]');
-  let currentSessionId = localStorage.getItem('ox_current_session_id') || null;
+  let sessions = JSON.parse(localStorage.getItem('gravix_chat_sessions') || '[]');
+  let currentSessionId = localStorage.getItem('gravix_current_session_id') || null;
   let isStreaming = false;
 
   // Initialize marked options
@@ -42,8 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Session Management ---
   function saveSessions() {
-    localStorage.setItem('ox_chat_sessions', JSON.stringify(sessions));
-    localStorage.setItem('ox_current_session_id', currentSessionId);
+    localStorage.setItem('gravix_chat_sessions', JSON.stringify(sessions));
+    localStorage.setItem('gravix_current_session_id', currentSessionId);
   }
 
   function getActiveSession() {
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'glm-5.3-flash',
+          model: 'gravix-ai',
           messages: session.messages,
           stream: true
         })

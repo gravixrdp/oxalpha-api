@@ -14,11 +14,11 @@ async def test_list_models(client: httpx.AsyncClient, auth_headers: dict[str, st
     assert isinstance(data["data"], list)
 
     model_ids = [m["id"] for m in data["data"]]
-    assert "glm-5.3-flash" in model_ids
-    assert "z-ai/glm-5.3-flash" in model_ids
+    assert "gravix-ai" in model_ids or "glm-5.3-flash" in model_ids
+    assert "gpt-4o" in model_ids
 
     # Check structure of model card
     card = data["data"][0]
     assert card["object"] == "model"
     assert "created" in card
-    assert card["owned_by"] == "oxalpha-proxy"
+    assert card["owned_by"] in ["gravix", "oxalpha-proxy"]

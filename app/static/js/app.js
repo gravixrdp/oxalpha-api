@@ -284,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          model: 'glm-5.3-flash',
           messages: session.messages,
           stream: true
         })

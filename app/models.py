@@ -17,7 +17,7 @@ class ChatMessage(BaseModel):
 class ChatCompletionRequest(BaseModel):
     """OpenAI-compatible chat completion request schema."""
 
-    model: str
+    model: str = "glm-5.3-flash"
     messages: list[ChatMessage] = Field(..., min_length=1)
     stream: bool = False
     temperature: float | None = None

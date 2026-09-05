@@ -84,6 +84,13 @@ class UpstreamClient:
         """
         async with self._lock:
             if not self._session_initialized or force_refresh:
+                if force_refresh:
+                    try:
+                        self.client.cookies.clear()
+                    except Exception:
+                        pass
+                    self._xsrf_token = None
+                    self._session_initialized = False
                 await self._warmup_session()
 
     async def _warmup_session(self) -> None:

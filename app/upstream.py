@@ -359,10 +359,30 @@ class UpstreamClient:
     ) -> AsyncGenerator[str, None]:
         """Streaming chat completion: yields SSE events matching OpenAI chunk format."""
         payload = self._prepare_payload(request)
-        resp = await self._send_with_retry(payload)
         public_model = request.model or self.settings.PUBLIC_MODEL_NAME
         fallback_id = f"chatcmpl-{uuid.uuid4().hex[:16]}"
         created_time = int(time.time())
+
+        try:
+            resp = await self._send_with_retry(payload)
+        except Exception as exc:
+            logger.error(f"Error establishing upstream stream: {exc}")
+            friendly_chunk = {
+                "id": fallback_id,
+                "object": "chat.completion.chunk",
+                "created": created_time,
+                "model": public_model,
+                "choices": [{
+                    "index": 0,
+                    "delta": {
+                        "content": "I am experiencing high traffic right now. Please try your request again in a moment."
+                    },
+                    "finish_reason": "stop"
+                }]
+            }
+            yield format_sse_chunk(friendly_chunk)
+            yield format_sse_done()
+            return
 
         stream_buffer = ""
         try:

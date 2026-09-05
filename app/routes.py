@@ -1,7 +1,6 @@
-"""FastAPI route definitions for health, models, and completions."""
-
+import os
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 
 from app.auth import verify_api_key
 from app.config import get_settings
@@ -16,6 +15,40 @@ from app.upstream import get_upstream_client
 from app.utils import request_id_ctx
 
 router = APIRouter()
+
+
+@router.get("/", response_class=HTMLResponse, tags=["Web UI"])
+async def serve_web_chat():
+    """Serve the modern dark-themed web chat user interface."""
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "index.html")
+    if os.path.exists(template_path):
+        return FileResponse(template_path)
+    return HTMLResponse("<h1>Ox Alpha Chat UI</h1><p>Template not found</p>", status_code=404)
+
+
+@router.post(
+    "/api/chat",
+    dependencies=[Depends(check_rate_limit)],
+    tags=["Web UI"],
+)
+async def web_chat_stream(
+    request: ChatCompletionRequest,
+    raw_request: Request,
+):
+    """Direct streaming chat endpoint for web UI."""
+    upstream_client = get_upstream_client()
+    req_id = request_id_ctx.get()
+
+    return StreamingResponse(
+        upstream_client.stream_chat_completion(request, req_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "X-Request-ID": req_id,
+        },
+    )
 
 
 @router.get("/health", tags=["Health"])

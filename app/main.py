@@ -1,5 +1,6 @@
 """FastAPI application entrypoint, lifecycle management, middleware, and error handlers."""
 
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -9,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
@@ -192,6 +194,11 @@ def create_app() -> FastAPI:
             },
             headers={"X-Request-ID": req_id},
         )
+
+    # Register Static Files
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    if os.path.exists(static_dir):
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     # Register API routes
     app.include_router(router)

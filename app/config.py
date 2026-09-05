@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     UPSTREAM_MODEL: str = "z-ai/glm-5.3-flash"
     PUBLIC_MODEL_NAME: str = "gravix-ai"
     BRAND_NAME: str = "Gravix AI"
+    UPSTREAM_SESSION_COOKIE: str | None = None
+    UPSTREAM_XSRF_TOKEN: str | None = None
 
     # Stealth Identity & Persona Prompt
     SYSTEM_PROMPT: str = (

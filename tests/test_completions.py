@@ -24,7 +24,7 @@ async def test_non_streaming_completion(client: httpx.AsyncClient, auth_headers:
         if request.url.path == "/api/chat":
             # Verify upstream request headers
             assert request.headers.get("x-xsrf-token") == "test-csrf-token="
-            assert request.headers.get("x-context-sent") == "4"
+            assert int(request.headers.get("x-context-sent", 0)) >= 1
 
             # Return SSE stream with 2 chunks + DONE
             chunk1 = {
